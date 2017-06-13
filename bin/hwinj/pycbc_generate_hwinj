@@ -149,6 +149,9 @@ parser.add_argument('--coa-phase', type=float, default=0.0,
                          'which is also commonly called coa-phase.'
                          'Called phiRef in LALSimulation. '
                          'Called coa_phase in sim_inspiral tables.')
+parser.add_argument('--long-asc-nodes', type=float, default=0.0,
+                    help='Longitude of ascending node in radians')
+
 parser.add_argument('--taper',  required=True,
                     choices=['TAPER_NONE', 'TAPER_START',
                              'TAPER_END', 'TAPER_STARTEND'],
@@ -269,6 +272,7 @@ sim.geocent_end_time = int(opts.geocentric_end_time)
 sim.geocent_end_time_ns = int(opts.geocentric_end_time % 1 * 1e9)
 sim.inclination = opts.inclination
 sim.coa_phase = opts.coa_phase
+#sim.long_asc_nodes = opts.long_asc_nodes
 sim.latitude = opts.dec
 sim.longitude = opts.ra
 sim.mass1 = opts.mass1
@@ -318,7 +322,7 @@ logging.info('Generating waveform at %.3fMpc beginning at %.3fHz for '
 h_plus, h_cross = get_td_waveform(sim, approximant=name,
                                   phase_order=phase_order,
                                   f_lower=opts.low_frequency_cutoff,
-                                  delta_t=1.0 / sample_rate)
+                                  delta_t=1.0 / sample_rate,long_asc_nodes=opts.long_asc_nodes )
 
 # zero pad polarizations to get integer second time series
 h_plus = pad_timeseries_to_integer_length(h_plus, sample_rate)
@@ -430,7 +434,7 @@ logging.info('Generating waveform at %.3fMpc beginning at %.3fHz for '
 h_plus, h_cross = get_td_waveform(sim, approximant=name,
                                   phase_order=phase_order,
                                   f_lower=opts.low_frequency_cutoff,
-                                  delta_t=1.0 / sample_rate)
+                                  delta_t=1.0 / sample_rate,long_asc_nodes=opts.long_asc_nodes)
 
 # zero pad polarizations to get integer second time series
 h_plus = pad_timeseries_to_integer_length(h_plus, sample_rate)
@@ -440,7 +444,7 @@ h_cross = pad_timeseries_to_integer_length(h_cross, sample_rate)
 # figure out length of time series to inject waveform into
 logging.info('Calculating number of sample points in output file')
 h_plus, _ = get_td_waveform(sim, approximant=name, phase_order=phase_order,
-                      delta_t=1.0/sample_rate)
+                            delta_t=1.0/sample_rate,long_asc_nodes=opts.long_asc_nodes)
 pad_seconds = 5
 template_duration_seconds = int( len(h_plus) / sample_rate ) + 1
 start_time = int(sim.geocent_end_time) - template_duration_seconds - pad_seconds
