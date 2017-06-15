@@ -478,7 +478,7 @@ for ifo in opts.instruments:
 
     # inject waveform
     logging.info('Injecting %s waveform into timeseries of zeroes', ifo)
-    injections = InjectionSet(xml_filename)
+    injections = InjectionSet(xml_filename,long_asc_nodes=opts.long_asc_nodes)
     injections.apply(output, ifo)
 
     # set output filename
