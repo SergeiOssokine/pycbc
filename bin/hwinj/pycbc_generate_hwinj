@@ -196,6 +196,13 @@ parser.add_argument("--tag", type=str, default='hwinjcbc',
                     help="Prefix added to output filenames.")
 parser.add_argument("--instruments", nargs="+", type=str, required=True,
                     help="List of instruments to analyze.")
+# Store intermediate results
+parser.add_argument("--write_hpc",action='store_true',default=False,
+                    help="Write the + and x polarizations to disc,in"
+                    "in files hplus.h5 and hcross.h5, for further use")
+
+parser.add_argument("--pols_from_file",action='store_true',default=False,
+                    help="Read polarizations from file when doing the injections")
 
 # add option groups
 fft.insert_fft_option_group(parser)
@@ -333,9 +340,12 @@ h_cross = pad_timeseries_to_integer_length(h_cross, sample_rate)
 # then genreate a zeroNoise TimeSeries to get length, delta_f, etc.
 if not opts.psd_estimation:
     opts.fake_strain = "zeroNoise"
+
+logging.info("Before strain dict")
 strain_dict = _strain.from_cli_multi_ifos(opts, opts.instruments,
                                           dyn_range_fac=DYN_RANGE_FAC)
 
+logging.info("After strain dict")
 # organize options for multi-IFO PSD
 # if not generating strain then set those related options to None
 stilde_dict = {}
@@ -443,7 +453,7 @@ h_cross = pad_timeseries_to_integer_length(h_cross, sample_rate)
 
 # figure out length of time series to inject waveform into
 logging.info('Calculating number of sample points in output file')
-h_plus, _ = get_td_waveform(sim, approximant=name, phase_order=phase_order,
+h_plus, h_cross = get_td_waveform(sim, approximant=name, phase_order=phase_order,
                             delta_t=1.0/sample_rate,long_asc_nodes=opts.long_asc_nodes)
 pad_seconds = 5
 template_duration_seconds = int( len(h_plus) / sample_rate ) + 1
@@ -478,7 +488,8 @@ for ifo in opts.instruments:
 
     # inject waveform
     logging.info('Injecting %s waveform into timeseries of zeroes', ifo)
-    injections = InjectionSet(xml_filename,long_asc_nodes=opts.long_asc_nodes)
+    injections = InjectionSet(xml_filename,long_asc_nodes=opts.long_asc_nodes,
+                              write_hpc=opts.write_hpc,pols_from_file=opts.pols_from_file)
     injections.apply(output, ifo)
 
     # set output filename

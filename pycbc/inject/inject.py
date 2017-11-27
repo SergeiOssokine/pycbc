@@ -30,12 +30,14 @@ import lal
 import copy
 import lalsimulation as sim
 import h5py
+import os
 from pycbc.waveform import get_td_waveform, utils as wfutils
 from pycbc.waveform import ringdown_td_approximants
 from pycbc_glue.ligolw import utils as ligolw_utils
 from pycbc_glue.ligolw import ligolw, table, lsctables
 from pycbc.types import float64, float32, TimeSeries
 from pycbc.detector import Detector
+from pycbc.types.timeseries import load_timeseries
 
 injection_func_map = {
     np.dtype(float32): sim.SimAddInjectionREAL4TimeSeries,
@@ -218,22 +220,30 @@ class InjectionSet(object):
 
         name, phase_order = legacy_approximant_name(inj.waveform)
 
+        if self.extra_args['pols_from_file']:
+           hp_tapered=load_timeseries("hplus.hdf")
+           hc_tapered=load_timeseries("hcross.hdf")
+        else:   
         # compute the waveform time series
-        hp, hc = get_td_waveform(
-            inj, approximant=name, delta_t=delta_t,
-            phase_order=phase_order,
-            f_lower=f_l, distance=inj.distance,
-            **self.extra_args)
-        hp /= distance_scale
-        hc /= distance_scale
+            hp, hc = get_td_waveform(
+                inj, approximant=name, delta_t=delta_t,
+                phase_order=phase_order,
+                f_lower=f_l, distance=inj.distance,
+                **self.extra_args)
+            hp /= distance_scale
+            hc /= distance_scale
+        
+            hp._epoch += inj.get_time_geocent()
+            hc._epoch += inj.get_time_geocent()
+            
+            # taper the polarizations
+            hp_tapered = wfutils.taper_timeseries(hp, inj.taper)
+            hc_tapered = wfutils.taper_timeseries(hc, inj.taper)
 
-        hp._epoch += inj.get_time_geocent()
-        hc._epoch += inj.get_time_geocent()
-
-        # taper the polarizations
-        hp_tapered = wfutils.taper_timeseries(hp, inj.taper)
-        hc_tapered = wfutils.taper_timeseries(hc, inj.taper)
-
+        if self.extra_args['write_hpc'] and not os.path.isfile("hplus.hdf"):
+            # Save h_+ and h_x
+            hp_tapered.save("hplus.hdf")
+            hc_tapered.save("hcross.hdf")
         # compute the detector response and add it to the strain
         signal = detector.project_wave(hp_tapered, hc_tapered,
                              inj.longitude, inj.latitude, inj.polarization)

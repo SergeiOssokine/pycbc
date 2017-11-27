@@ -54,9 +54,14 @@ parser.add_argument('--sample-rate', type=int, required=True,
              help='Sample rate that waveforms will be generated.')
 parser.add_argument("--tag", type=str, default='hwinjcbcsimid',
                     help="Prefix added to output filenames.")
+parser.add_argument("--ifos",type=str,default="H1,L1,V1",
+                    help="IFOs to generate waveforms")
 
+parser.add_argument("--pols_from_file",action="store_true",
+                    help="Load polarizations from hplus.hdf and hcross.hdf")
 # parse command line
 opts = parser.parse_args()
+ifos=opts.ifos.split(",")
 
 # setup log
 logging_level = logging.DEBUG
@@ -64,7 +69,7 @@ logging.basicConfig(format='%(asctime)s : %(message)s', level=logging_level)
 
 # read in injection LIGOLW XML file
 logging.info('Reading injection file')
-injections = InjectionSet(opts.injection_file)
+injections = InjectionSet(opts.injection_file,pols_from_file=opts.pols_from_file,write_hpc=False)
 
 # loop over rows in sim_inspiral table
 for sim in injections.table:
