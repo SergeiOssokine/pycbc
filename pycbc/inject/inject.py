@@ -242,8 +242,12 @@ class InjectionSet(object):
 
         if self.extra_args['write_hpc'] and not os.path.isfile("hplus.hdf"):
             # Save h_+ and h_x
+            hp_tapered._epoch-=inj.get_time_geocent()
+            hc_tapered._epoch-=inj.get_time_geocent()
             hp_tapered.save("hplus.hdf")
             hc_tapered.save("hcross.hdf")
+            hp_tapered._epoch+=inj.get_time_geocent()
+            hc_tapered._epoch+=inj.get_time_geocent()
         # compute the detector response and add it to the strain
         signal = detector.project_wave(hp_tapered, hc_tapered,
                              inj.longitude, inj.latitude, inj.polarization)
